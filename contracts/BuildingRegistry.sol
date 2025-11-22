@@ -277,5 +277,62 @@ contract BuildingRegistry is Ownable {
     function getNextBuildingId() external view returns (uint256) {
         return _nextBuildingId;
     }
+
+    /**
+     * @notice Gets the total number of buildings created
+     * @return The total number of buildings (nextBuildingId - 1)
+     */
+    function getTotalBuildings() external view returns (uint256) {
+        return _nextBuildingId > 0 ? _nextBuildingId - 1 : 0;
+    }
+
+    /**
+     * @notice Lists all building IDs
+     * @dev Returns all building IDs from 1 to _nextBuildingId - 1
+     * @return An array of all building IDs
+     */
+    function listBuildingIds() external view returns (uint256[] memory) {
+        uint256 total = _nextBuildingId > 0 ? _nextBuildingId - 1 : 0;
+        uint256[] memory buildingIds = new uint256[](total);
+        
+        for (uint256 i = 0; i < total; i++) {
+            buildingIds[i] = i + 1;
+        }
+        
+        return buildingIds;
+    }
+
+    /**
+     * @notice Lists building IDs in a paginated range
+     * @dev Useful for gas-efficient pagination when there are many buildings
+     * @param offset The starting index (0-based)
+     * @param limit The maximum number of building IDs to return
+     * @return buildingIds An array of building IDs in the specified range
+     * @return total The total number of buildings available
+     */
+    function listBuildings(
+        uint256 offset,
+        uint256 limit
+    ) external view returns (uint256[] memory buildingIds, uint256 total) {
+        total = _nextBuildingId > 0 ? _nextBuildingId - 1 : 0;
+        
+        if (offset >= total) {
+            return (new uint256[](0), total);
+        }
+        
+        uint256 end = offset + limit;
+        if (end > total) {
+            end = total;
+        }
+        
+        uint256 length = end - offset;
+        buildingIds = new uint256[](length);
+        
+        for (uint256 i = 0; i < length; i++) {
+            buildingIds[i] = offset + i + 1;
+        }
+        
+        return (buildingIds, total);
+    }
 }
 

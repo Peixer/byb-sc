@@ -644,6 +644,335 @@ describe("BuildingRegistry", async function () {
     });
   });
 
+  describe("getTotalBuildings", function () {
+    it("Should return 0 when no buildings exist", async function () {
+      const [owner] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      assert.equal(await registry.read.getTotalBuildings(), 0n);
+    });
+
+    it("Should return correct total after creating buildings", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      // Initially 0
+      assert.equal(await registry.read.getTotalBuildings(), 0n);
+
+      // After creating one building
+      await createBuilding(
+        registry,
+        owner,
+        "Building 1",
+        "ipfs://1",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+      assert.equal(await registry.read.getTotalBuildings(), 1n);
+
+      // After creating another building
+      await createBuilding(
+        registry,
+        owner,
+        "Building 2",
+        "ipfs://2",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+      assert.equal(await registry.read.getTotalBuildings(), 2n);
+
+      // After creating a third building
+      await createBuilding(
+        registry,
+        owner,
+        "Building 3",
+        "ipfs://3",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+      assert.equal(await registry.read.getTotalBuildings(), 3n);
+    });
+  });
+
+  describe("listBuildingIds", function () {
+    it("Should return empty array when no buildings exist", async function () {
+      const [owner] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      const buildingIds = await registry.read.listBuildingIds();
+      assert.equal(buildingIds.length, 0);
+    });
+
+    it("Should return single building ID", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      await createBuilding(
+        registry,
+        owner,
+        "Building 1",
+        "ipfs://1",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+
+      const buildingIds = await registry.read.listBuildingIds();
+      assert.equal(buildingIds.length, 1);
+      assert.equal(buildingIds[0], 1n);
+    });
+
+    it("Should return all building IDs in order", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      // Create multiple buildings
+      await createBuilding(
+        registry,
+        owner,
+        "Building 1",
+        "ipfs://1",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+      await createBuilding(
+        registry,
+        owner,
+        "Building 2",
+        "ipfs://2",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+      await createBuilding(
+        registry,
+        owner,
+        "Building 3",
+        "ipfs://3",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+
+      const buildingIds = await registry.read.listBuildingIds();
+      assert.equal(buildingIds.length, 3);
+      assert.equal(buildingIds[0], 1n);
+      assert.equal(buildingIds[1], 2n);
+      assert.equal(buildingIds[2], 3n);
+    });
+
+    it("Should return correct IDs for many buildings", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      // Create 10 buildings
+      for (let i = 1; i <= 10; i++) {
+        await createBuilding(
+          registry,
+          owner,
+          `Building ${i}`,
+          `ipfs://${i}`,
+          developer.account.address,
+          oracle.account.address,
+          3
+        );
+      }
+
+      const buildingIds = await registry.read.listBuildingIds();
+      assert.equal(buildingIds.length, 10);
+      for (let i = 0; i < 10; i++) {
+        assert.equal(buildingIds[i], BigInt(i + 1));
+      }
+    });
+  });
+
+  describe("listBuildings", function () {
+    it("Should return empty array when no buildings exist", async function () {
+      const [owner] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      const [buildingIds, total] = await registry.read.listBuildings([0n, 10n]);
+      assert.equal(buildingIds.length, 0);
+      assert.equal(total, 0n);
+    });
+
+    it("Should return empty array when offset exceeds total", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      await createBuilding(
+        registry,
+        owner,
+        "Building 1",
+        "ipfs://1",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+
+      const [buildingIds, total] = await registry.read.listBuildings([10n, 5n]);
+      assert.equal(buildingIds.length, 0);
+      assert.equal(total, 1n);
+    });
+
+    it("Should return single building with offset 0", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      await createBuilding(
+        registry,
+        owner,
+        "Building 1",
+        "ipfs://1",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+
+      const [buildingIds, total] = await registry.read.listBuildings([0n, 10n]);
+      assert.equal(buildingIds.length, 1);
+      assert.equal(buildingIds[0], 1n);
+      assert.equal(total, 1n);
+    });
+
+    it("Should return correct paginated results", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      // Create 5 buildings
+      for (let i = 1; i <= 5; i++) {
+        await createBuilding(
+          registry,
+          owner,
+          `Building ${i}`,
+          `ipfs://${i}`,
+          developer.account.address,
+          oracle.account.address,
+          3
+        );
+      }
+
+      // First page: offset 0, limit 2
+      let [buildingIds, total] = await registry.read.listBuildings([0n, 2n]);
+      assert.equal(buildingIds.length, 2);
+      assert.equal(buildingIds[0], 1n);
+      assert.equal(buildingIds[1], 2n);
+      assert.equal(total, 5n);
+
+      // Second page: offset 2, limit 2
+      [buildingIds, total] = await registry.read.listBuildings([2n, 2n]);
+      assert.equal(buildingIds.length, 2);
+      assert.equal(buildingIds[0], 3n);
+      assert.equal(buildingIds[1], 4n);
+      assert.equal(total, 5n);
+
+      // Third page: offset 4, limit 2 (should return only 1)
+      [buildingIds, total] = await registry.read.listBuildings([4n, 2n]);
+      assert.equal(buildingIds.length, 1);
+      assert.equal(buildingIds[0], 5n);
+      assert.equal(total, 5n);
+    });
+
+    it("Should handle limit larger than available buildings", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      // Create 3 buildings
+      for (let i = 1; i <= 3; i++) {
+        await createBuilding(
+          registry,
+          owner,
+          `Building ${i}`,
+          `ipfs://${i}`,
+          developer.account.address,
+          oracle.account.address,
+          3
+        );
+      }
+
+      // Request 10 but only 3 exist
+      const [buildingIds, total] = await registry.read.listBuildings([0n, 10n]);
+      assert.equal(buildingIds.length, 3);
+      assert.equal(buildingIds[0], 1n);
+      assert.equal(buildingIds[1], 2n);
+      assert.equal(buildingIds[2], 3n);
+      assert.equal(total, 3n);
+    });
+
+    it("Should handle pagination with offset in middle", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      // Create 10 buildings
+      for (let i = 1; i <= 10; i++) {
+        await createBuilding(
+          registry,
+          owner,
+          `Building ${i}`,
+          `ipfs://${i}`,
+          developer.account.address,
+          oracle.account.address,
+          3
+        );
+      }
+
+      // Get middle section: offset 3, limit 4
+      const [buildingIds, total] = await registry.read.listBuildings([3n, 4n]);
+      assert.equal(buildingIds.length, 4);
+      assert.equal(buildingIds[0], 4n);
+      assert.equal(buildingIds[1], 5n);
+      assert.equal(buildingIds[2], 6n);
+      assert.equal(buildingIds[3], 7n);
+      assert.equal(total, 10n);
+    });
+
+    it("Should return empty array when offset equals total", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      // Create 3 buildings
+      for (let i = 1; i <= 3; i++) {
+        await createBuilding(
+          registry,
+          owner,
+          `Building ${i}`,
+          `ipfs://${i}`,
+          developer.account.address,
+          oracle.account.address,
+          3
+        );
+      }
+
+      // Offset equals total (3)
+      const [buildingIds, total] = await registry.read.listBuildings([3n, 5n]);
+      assert.equal(buildingIds.length, 0);
+      assert.equal(total, 3n);
+    });
+
+    it("Should handle zero limit", async function () {
+      const [owner, developer, oracle] = await viem.getWalletClients();
+      const registry = await deployBuildingRegistry(owner.account.address);
+
+      await createBuilding(
+        registry,
+        owner,
+        "Building 1",
+        "ipfs://1",
+        developer.account.address,
+        oracle.account.address,
+        3
+      );
+
+      const [buildingIds, total] = await registry.read.listBuildings([0n, 0n]);
+      assert.equal(buildingIds.length, 0);
+      assert.equal(total, 1n);
+    });
+  });
+
   describe("buildings mapping", function () {
     it("Should allow direct access to building data via public mapping", async function () {
       const [owner, developer, oracle] = await viem.getWalletClients();
