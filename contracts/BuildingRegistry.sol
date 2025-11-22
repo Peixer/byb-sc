@@ -28,6 +28,8 @@ contract BuildingRegistry is Ownable {
         uint256 id;
         string name;
         string metadataURI;
+        string description;
+        string location;
         address developer;
         address oracle;
         address tokenContract;
@@ -35,6 +37,7 @@ contract BuildingRegistry is Ownable {
         uint8 totalMilestones;
         uint8 currentMilestone;
         bool exists;
+        bool featured;
     }
 
     /// @notice Mapping from building ID to Building struct
@@ -139,7 +142,10 @@ contract BuildingRegistry is Ownable {
         string memory metadataURI,
         address developer,
         address oracle,
-        uint8 totalMilestones
+        uint8 totalMilestones,
+        string memory description,
+        string memory location,
+        bool featured
     ) external returns (uint256 buildingId) {
         require(totalMilestones > 0, "BuildingRegistry: totalMilestones must be > 0");
         require(developer != address(0), "BuildingRegistry: developer cannot be zero address");
@@ -158,7 +164,10 @@ contract BuildingRegistry is Ownable {
             status: Status.Draft,
             totalMilestones: totalMilestones,
             currentMilestone: 0,
-            exists: true
+            exists: true,
+            featured: featured,
+            description: description,
+            location: location
         });
 
         emit BuildingCreated(buildingId, developer);
@@ -240,7 +249,10 @@ contract BuildingRegistry is Ownable {
         Status status,
         uint8 totalMilestones,
         uint8 currentMilestone,
-        bool exists
+        bool exists,
+        bool featured,
+        string memory description,
+        string memory location
     ) {
         Building memory building = buildings[buildingId];
         require(building.exists, "BuildingRegistry: building does not exist");
@@ -254,7 +266,10 @@ contract BuildingRegistry is Ownable {
             building.status,
             building.totalMilestones,
             building.currentMilestone,
-            building.exists
+            building.exists,
+            building.featured,
+            building.description,
+            building.location
         );
     }
 

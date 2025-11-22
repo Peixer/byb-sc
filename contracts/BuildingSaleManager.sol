@@ -48,7 +48,10 @@ interface IBuildingRegistry {
         Status,
         uint8,
         uint8,
-        bool
+        bool,
+        bool,
+        string memory,
+        string memory
     );
 }
 
@@ -222,7 +225,9 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
             ,
             ,
             ,
-            bool exists
+            bool exists,
+            ,
+            ,
         ) = buildingRegistry.getBuilding(buildingId);
         require(
             exists,

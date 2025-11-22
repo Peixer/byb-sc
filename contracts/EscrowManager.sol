@@ -112,7 +112,9 @@ contract EscrowManager is Ownable, ReentrancyGuard {
             ,
             uint8 totalMilestones,
             ,
-            bool exists
+            bool exists,
+            ,
+            , 
         ) = buildingRegistry.getBuilding(buildingId);
 
         require(exists, "EscrowManager: building does not exist");
@@ -196,7 +198,9 @@ contract EscrowManager is Ownable, ReentrancyGuard {
             ,
             ,
             uint8 currentMilestone,
-            bool exists
+            bool exists,
+            ,
+            ,
         ) = buildingRegistry.getBuilding(buildingId);
 
         require(exists, "EscrowManager: building does not exist");
@@ -320,7 +324,9 @@ contract EscrowManager is Ownable, ReentrancyGuard {
             ,
             ,
             uint8 currentMilestone,
-            bool exists
+            bool exists,
+            ,
+            ,
         ) = buildingRegistry.getBuilding(buildingId);
 
         if (!exists || currentMilestone <= escrow.lastReleasedMilestone) {

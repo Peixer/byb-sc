@@ -44,10 +44,13 @@ describe("EscrowManager", async function () {
     metadataURI: string = "ipfs://test",
     developer: Address,
     oracle: Address,
-    totalMilestones: number = 5
+    totalMilestones: number = 5,
+    description: string = "Test description",
+    location: string = "Test location",
+    featured: boolean = false
   ) {
     return await registry.write.createBuilding(
-      [name, metadataURI, developer, oracle, totalMilestones],
+      [name, metadataURI, developer, oracle, totalMilestones, description, location, featured],
       { account: signer.account }
     );
   }

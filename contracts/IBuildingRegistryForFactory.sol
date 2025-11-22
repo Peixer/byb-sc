@@ -27,6 +27,9 @@ interface IBuildingRegistryForFactory {
      * @return totalMilestones Total number of milestones
      * @return currentMilestone Current milestone number
      * @return exists Whether the building exists
+     * @return featured Whether the building is featured
+     * @return description The building description
+     * @return location The building location
      */
     function getBuilding(uint256 buildingId) external view returns (
         uint256,
@@ -38,7 +41,10 @@ interface IBuildingRegistryForFactory {
         Status,
         uint8,
         uint8,
-        bool
+        bool,
+        bool,
+        string memory,
+        string memory
     );
 
     /**
