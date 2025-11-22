@@ -14,16 +14,7 @@ import "./IBuildingRegistry.sol";
  */
 contract BuildingToken is ERC20, Ownable {
     /// @notice The unique identifier of the building this token represents
-    uint256 public immutable buildingId; 
-
-    /// @notice Mapping of addresses that are whitelisted for transfers when restrictions are enabled
-    mapping(address => bool) public isWhitelisted;
-
-    /// @notice Emitted when transfer restrictions are updated
-    event TransfersRestricted(bool restricted);
-
-    /// @notice Emitted when an address is added to or removed from the whitelist
-    event WhitelistUpdated(address indexed account, bool allowed);
+    uint256 public immutable buildingId;  
 
     /**
      * @notice Constructs a new BuildingToken
