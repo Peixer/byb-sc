@@ -53,6 +53,19 @@ interface IBuildingRegistry {
 }
 
 /**
+ * @title IEscrowManager
+ * @notice Interface for interacting with the EscrowManager contract
+ */
+interface IEscrowManager {
+    /**
+     * @notice Deposits funds into escrow for a building
+     * @param buildingId The ID of the building
+     * @param amount The amount of quote tokens to deposit
+     */
+    function depositFunds(uint256 buildingId, uint256 amount) external;
+}
+
+/**
  * @title BuildingSaleManager
  * @author Real Estate Construction RWA Protocol
  * @notice Manages the sale and capital flow layer for real estate construction projects
@@ -75,6 +88,9 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
 
     /// @notice Reference to the BuildingRegistry contract
     IBuildingRegistry public buildingRegistry;
+
+    /// @notice Reference to the EscrowManager contract (can be zero address if not set)
+    IEscrowManager public escrowManager;
 
     /// @notice Mapping from building ID to Sale struct
     mapping(uint256 => Sale) public sales;
@@ -140,6 +156,22 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
     );
 
     /**
+     * @notice Emitted when tokens are bought back by the builder
+     * @param buildingId The unique identifier of the building
+     * @param builder The address of the builder buying back tokens
+     * @param investor The address of the investor selling tokens
+     * @param amountTokens The amount of BuildingTokens bought back
+     * @param amountQuote The amount of quote tokens paid
+     */
+    event TokensBoughtBack(
+        uint256 indexed buildingId,
+        address indexed builder,
+        address indexed investor,
+        uint256 amountTokens,
+        uint256 amountQuote
+    );
+
+    /**
      * @notice Constructor sets the contract owner and dependencies
      * @param initialOwner The address that will own the contract
      * @param _buildingRegistry The address of the BuildingRegistry contract
@@ -171,6 +203,34 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
         require(
             saleOracles[buildingId] == msg.sender,
             "BuildingSaleManager: caller is not the oracle for this building"
+        );
+        _;
+    }
+
+    /**
+     * @notice Modifier to check if caller is the developer/builder of a specific building
+     * @param buildingId The ID of the building to check
+     */
+    modifier onlyDeveloperOfBuilding(uint256 buildingId) {
+        (
+            ,
+            ,
+            ,
+            address developer,
+            ,
+            ,
+            ,
+            ,
+            ,
+            bool exists
+        ) = buildingRegistry.getBuilding(buildingId);
+        require(
+            exists,
+            "BuildingSaleManager: building does not exist"
+        );
+        require(
+            developer == msg.sender,
+            "BuildingSaleManager: caller is not the developer for this building"
         );
         _;
     }
@@ -354,6 +414,18 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
             "BuildingSaleManager: quote token transfer failed"
         );
 
+        // If EscrowManager is configured, deposit funds to escrow instead of holding them
+        if (address(escrowManager) != address(0)) {
+            // Reset approval to 0 first (required for some tokens like USDT)
+            quoteToken.approve(address(escrowManager), 0);
+            
+            // Approve EscrowManager to spend the quote tokens
+            quoteToken.approve(address(escrowManager), quoteAmount);
+
+            // Deposit funds to escrow (will revert if approval/transfer fails)
+            escrowManager.depositFunds(buildingId, quoteAmount);
+        }
+
         // Transfer BuildingTokens from treasury to buyer
         IERC20 buildingToken = IERC20(sale.buildingToken);
         require(
@@ -411,6 +483,66 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
     }
 
     /**
+     * @notice Allows the builder/developer to buy back tokens from investors
+     * @dev Non-reentrant. Only callable by the developer of the building.
+     *      The developer must approve the contract to transfer quote tokens.
+     *      The investor must approve the contract to transfer BuildingTokens.
+     * @param buildingId The ID of the building
+     * @param investor The address of the investor selling tokens
+     * @param tokenAmount The amount of BuildingTokens to buy back
+     */
+    function buybackTokens(
+        uint256 buildingId,
+        address investor,
+        uint256 tokenAmount
+    ) external nonReentrant onlyDeveloperOfBuilding(buildingId) {
+        require(
+            tokenAmount > 0,
+            "BuildingSaleManager: tokenAmount must be > 0"
+        );
+        require(
+            investor != address(0),
+            "BuildingSaleManager: investor cannot be zero address"
+        );
+
+        Sale storage sale = sales[buildingId];
+        require(
+            sale.buildingToken != address(0),
+            "BuildingSaleManager: sale not configured"
+        );
+
+        // Calculate quote tokens needed: tokenAmount * tokenPrice
+        // Note: Assumes tokenPrice accounts for decimal differences between tokens
+        uint256 quoteAmount = tokenAmount * sale.tokenPrice;
+        require(
+            quoteAmount > 0,
+            "BuildingSaleManager: quoteAmount calculation resulted in zero"
+        );
+
+        // Transfer quote tokens from builder (msg.sender) to investor
+        IERC20 quoteToken = IERC20(sale.quoteToken);
+        require(
+            quoteToken.transferFrom(msg.sender, investor, quoteAmount),
+            "BuildingSaleManager: quote token transfer failed"
+        );
+
+        // Transfer BuildingTokens from investor to builder (msg.sender)
+        IERC20 buildingToken = IERC20(sale.buildingToken);
+        require(
+            buildingToken.transferFrom(investor, msg.sender, tokenAmount),
+            "BuildingSaleManager: building token transfer failed"
+        );
+
+        emit TokensBoughtBack(
+            buildingId,
+            msg.sender,
+            investor,
+            tokenAmount,
+            quoteAmount
+        );
+    }
+
+    /**
      * @notice Updates the token treasury address
      * @dev Only callable by owner
      * @param _tokenTreasury The new treasury address
@@ -421,6 +553,15 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
             "BuildingSaleManager: tokenTreasury cannot be zero address"
         );
         tokenTreasury = _tokenTreasury;
+    }
+
+    /**
+     * @notice Sets the EscrowManager contract address
+     * @dev Only callable by owner. Set to zero address to disable escrow deposits.
+     * @param _escrowManager The address of the EscrowManager contract
+     */
+    function setEscrowManager(address _escrowManager) external onlyOwner {
+        escrowManager = IEscrowManager(_escrowManager);
     }
 
     /**
