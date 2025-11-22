@@ -126,7 +126,7 @@ contract BuildingRegistry is Ownable {
 
     /**
      * @notice Creates a new building registration
-     * @dev Only callable by owner or admin. Auto-increments building ID.
+     * @dev Auto-increments building ID. Can be called by anyone.
      * @param name The name of the building project
      * @param metadataURI URI pointing to offchain plans and documentation
      * @param developer The address of the construction company
@@ -140,7 +140,7 @@ contract BuildingRegistry is Ownable {
         address developer,
         address oracle,
         uint8 totalMilestones
-    ) external onlyOwnerOrAdmin returns (uint256 buildingId) {
+    ) external returns (uint256 buildingId) {
         require(totalMilestones > 0, "BuildingRegistry: totalMilestones must be > 0");
         require(developer != address(0), "BuildingRegistry: developer cannot be zero address");
         require(oracle != address(0), "BuildingRegistry: oracle cannot be zero address");

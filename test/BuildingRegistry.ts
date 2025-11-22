@@ -128,22 +128,33 @@ describe("BuildingRegistry", async function () {
       assert.equal(building[1], "Admin Building");
     });
 
-    it("Should revert if non-owner/non-admin tries to create building", async function () {
+    it("Should allow anyone to create building", async function () {
       const [owner, unauthorized, developer, oracle] = await viem.getWalletClients();
       const registry = await deployBuildingRegistry(owner.account.address);
 
-      await assert.rejects(
-        createBuilding(
-          registry,
-          unauthorized,
-          "Unauthorized Building",
-          "ipfs://unauthorized",
-          developer.account.address,
-          oracle.account.address,
-          3
+      const name = "Unauthorized Building";
+      const metadataURI = "ipfs://unauthorized";
+      const totalMilestones = 3;
+
+      await viem.assertions.emitWithArgs(
+        registry.write.createBuilding(
+          [name, metadataURI, developer.account.address, oracle.account.address, totalMilestones],
+          { account: unauthorized.account }
         ),
-        /BuildingRegistry: caller is not owner or admin/
+        registry,
+        "BuildingCreated",
+        [1n, getAddress(developer.account.address)]
       );
+
+      const building = await registry.read.getBuilding([1n]);
+      assert.equal(building[0], 1n); // id
+      assert.equal(building[1], name);
+      assert.equal(building[2], metadataURI);
+      assert.equal(building[3].toLowerCase(), developer.account.address.toLowerCase());
+      assert.equal(building[4].toLowerCase(), oracle.account.address.toLowerCase());
+      assert.equal(building[6], 0); // Status.Draft
+      assert.equal(building[7], totalMilestones);
+      assert.equal(building[9], true); // exists
     });
 
     it("Should revert if totalMilestones is zero", async function () {
