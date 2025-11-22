@@ -217,11 +217,45 @@ contract BuildingRegistry is Ownable {
     /**
      * @notice Gets full building data by ID
      * @param buildingId The ID of the building to retrieve
-     * @return building The complete Building struct
+     * @return id The building ID
+     * @return name The building name
+     * @return metadataURI The metadata URI
+     * @return developer The developer address
+     * @return oracle The oracle address
+     * @return tokenContract The token contract address
+     * @return status The current status
+     * @return totalMilestones Total number of milestones
+     * @return currentMilestone Current milestone number
+     * @return exists Whether the building exists
      */
-    function getBuilding(uint256 buildingId) external view returns (Building memory) {
-        require(buildings[buildingId].exists, "BuildingRegistry: building does not exist");
-        return buildings[buildingId];
+    function getBuilding(
+        uint256 buildingId
+    ) external view returns (
+        uint256 id,
+        string memory name,
+        string memory metadataURI,
+        address developer,
+        address oracle,
+        address tokenContract,
+        Status status,
+        uint8 totalMilestones,
+        uint8 currentMilestone,
+        bool exists
+    ) {
+        Building memory building = buildings[buildingId];
+        require(building.exists, "BuildingRegistry: building does not exist");
+        return (
+            building.id,
+            building.name,
+            building.metadataURI,
+            building.developer,
+            building.oracle,
+            building.tokenContract,
+            building.status,
+            building.totalMilestones,
+            building.currentMilestone,
+            building.exists
+        );
     }
 
     /**
