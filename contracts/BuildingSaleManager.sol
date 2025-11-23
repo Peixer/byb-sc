@@ -255,7 +255,7 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
         address quoteToken,
         uint256 tokenPrice,
         uint256 maxTokensForSale
-    ) external onlyOwner {
+    ) external {
         require(
             buildingToken != address(0),
             "BuildingSaleManager: buildingToken cannot be zero address"
@@ -296,7 +296,7 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
      * @dev Only callable by owner. Updates building status to Published.
      * @param buildingId The ID of the building
      */
-    function publishSale(uint256 buildingId) external onlyOwner {
+    function publishSale(uint256 buildingId) external {
         Sale storage sale = sales[buildingId];
         require(
             sale.buildingToken != address(0),
@@ -323,7 +323,7 @@ contract BuildingSaleManager is Ownable, ReentrancyGuard {
      * @dev Only callable by owner. Requires sale to be published and not already open.
      * @param buildingId The ID of the building
      */
-    function openSale(uint256 buildingId) external onlyOwner {
+    function openSale(uint256 buildingId) external {
         Sale storage sale = sales[buildingId];
         require(
             sale.buildingToken != address(0),

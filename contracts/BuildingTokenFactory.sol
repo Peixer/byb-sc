@@ -63,7 +63,7 @@ contract BuildingTokenFactory is Ownable {
         string memory symbol,
         uint256 totalSupply,
         address initialOwner
-    ) external onlyOwner returns (address tokenAddress) {
+    ) external returns (address tokenAddress) {
         require(
             buildingTokens[buildingId] == address(0),
             "BuildingTokenFactory: token already exists for this building"
