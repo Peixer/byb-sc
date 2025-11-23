@@ -145,7 +145,7 @@ async function main() {
       BUILDING_METADATA_URI ?? "https://example.com/metadata.json",
       BUILDING_DEVELOPER ?? deployer,
       BUILDING_ORACLE ?? deployer,
-      BUILDING_TOTAL_MILESTONES ?? 3,
+      BUILDING_TOTAL_MILESTONES ?? 3,  "Test description", "Test location", false
     ]);
     const receipt = await publicClient.waitForTransactionReceipt({ hash: createBuildingTx });
     
