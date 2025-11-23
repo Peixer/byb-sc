@@ -91,7 +91,7 @@ contract EscrowManager is Ownable, ReentrancyGuard {
         uint256 buildingId,
         address developer,
         uint256[] memory milestoneAmounts
-    ) external onlyOwner {
+    ) external  {
         require(
             developer != address(0),
             "EscrowManager: developer cannot be zero address"

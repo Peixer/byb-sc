@@ -182,7 +182,7 @@ contract BuildingRegistry is Ownable {
     function setTokenContract(
         uint256 buildingId,
         address tokenContract
-    ) external onlyOwnerOrDeveloper(buildingId) {
+    ) external {
         require(buildings[buildingId].exists, "BuildingRegistry: building does not exist");
         require(tokenContract != address(0), "BuildingRegistry: tokenContract cannot be zero address");
 
