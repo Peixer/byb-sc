@@ -216,7 +216,7 @@ contract BuildingRegistry is Ownable {
     function updateStatus(
         uint256 buildingId,
         Status newStatus
-    ) external onlyOwnerOrDeveloper(buildingId) {
+    ) external {
         require(buildings[buildingId].exists, "BuildingRegistry: building does not exist");
 
         buildings[buildingId].status = newStatus;
@@ -272,6 +272,10 @@ contract BuildingRegistry is Ownable {
             building.location
         );
     }
+
+
+    // create function to getBuildings by contract address list
+    
 
     /**
      * @notice Adds or removes an admin address
